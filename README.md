@@ -21,10 +21,12 @@ A responsive, browser-based interface for non-technical users of the Insighta La
 
 1. Ensure the backend is running at `http://localhost:8000`.
 2. Serve the frontend directory using any web server:
+
    ```bash
    # Using PHP's built-in server
    php -S localhost:3000
    ```
+
 3. Open `http://localhost:3000` in your browser.
 
 ## Authentication Logic
