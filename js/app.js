@@ -20,10 +20,11 @@ async function handleRoute() {
     const hash = window.location.hash || '#dashboard';
     const view = hash.substring(1).split('?')[0];
     
-    // Check auth (simplified for now - real app would check cookies/JWT)
-    // If not logged in, force login view
-    if (!getCookie('access_token') && view !== 'login') {
-        window.location.hash = '#login';
+    // We can't check HTTP-only cookies in JS. 
+    // We'll let the API requests handle the 401 redirection.
+    // However, we don't want to redirect to dashboard if we are on login.
+    if (view === 'login') {
+        renderLogin();
         return;
     }
 
@@ -41,11 +42,14 @@ function render(view) {
 }
 
 function renderLogin() {
+    // If we have a 'logged_out' param, we don't want to auto-redirect
     APP_ELEMENT.innerHTML = `
         <div class="container d-flex justify-content-center">
-            <div class="login-container card p-4 text-center mt-5">
-                <h2 class="mb-4">Insighta Labs+</h2>
-                <p class="text-muted">Sign in to access the platform</p>
+            <div class="login-container card p-4 text-center mt-5 shadow">
+                <h2 class="mb-4 text-primary">Insighta Labs+</h2>
+                <p class="text-muted">Secure Multi-Interface Integration</p>
+                <hr>
+                <p class="small text-muted mb-4">You will be redirected to GitHub to authenticate.</p>
                 <a href="${API_BASE}/auth/github" class="btn btn-dark btn-lg w-100">
                     <i class="bi bi-github me-2"></i> Continue with GitHub
                 </a>
@@ -265,6 +269,7 @@ async function apiRequest(endpoint, options = {}) {
         'X-API-Version': '1',
         ...options.headers
     };
+    options.credentials = 'include';
 
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, options);
