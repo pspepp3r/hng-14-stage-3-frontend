@@ -15,8 +15,7 @@ const state = {
 };
 
 // --- API Helpers ---
-
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint, options = {}, isRetry = false) {
     options.headers = {
         'Accept': 'application/json',
         'X-API-Version': '1',
@@ -26,14 +25,43 @@ async function apiRequest(endpoint, options = {}) {
 
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, options);
-        if (response.status === 401) {
+
+        if (response.status === 401 && !isRetry && endpoint !== '/auth/refresh') {
+            // Attempt to refresh token
+            const refreshSuccess = await refreshTokens();
+            if (refreshSuccess) {
+                return await apiRequest(endpoint, options, true); // Retry once
+            }
+            // If refresh fails, redirect to login
             window.location.hash = '#login';
             return null;
         }
+
+        if (response.status === 401 && (isRetry || endpoint === '/auth/refresh')) {
+            window.location.hash = '#login';
+            return null;
+        }
+
         return await response.json();
     } catch (err) {
         console.error('API Error:', err);
         return null;
+    }
+}
+
+async function refreshTokens() {
+    try {
+        const response = await fetch(`${API_BASE}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-API-Version': '1'
+            },
+            credentials: 'include'
+        });
+        return response.ok;
+    } catch (err) {
+        return false;
     }
 }
 
