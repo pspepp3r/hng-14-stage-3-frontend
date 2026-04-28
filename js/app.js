@@ -3,7 +3,7 @@ import { renderDashboard, loadDashboardData } from './views/dashboard.js';
 import { renderAccount } from './views/account.js';
 import { renderLayout } from './views/layout.js';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://hng-14-stage-3-backend-production.up.railway.app';
 const APP_ELEMENT = document.getElementById('app');
 
 const state = {
@@ -70,7 +70,7 @@ async function exportCSV() {
     const formData = new FormData(form);
     const params = Object.fromEntries(formData.entries());
     params.format = 'csv';
-    
+
     const qs = new URLSearchParams(params).toString();
     const url = `${API_BASE}/api/profiles/export?${qs}`;
 
@@ -116,16 +116,16 @@ function logout() {
 async function handleRoute() {
     const hash = window.location.hash || '#dashboard';
     const view = hash.substring(1).split('?')[0];
-    
+
     if (view === 'login') {
         renderLogin(APP_ELEMENT, API_BASE);
         return;
     }
 
     renderLayout(
-        APP_ELEMENT, 
-        view, 
-        logout, 
+        APP_ELEMENT,
+        view,
+        logout,
         (container) => renderDashboard(container, apiRequest, exportCSV),
         (container) => renderAccount(container, apiRequest)
     );
