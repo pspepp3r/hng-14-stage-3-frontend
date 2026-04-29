@@ -133,9 +133,35 @@ async function handleRoute() {
 
 // --- Initialization ---
 
-function init() {
-    window.addEventListener('hashchange', handleRoute);
+async function checkAuthAndRoute() {
+    const hash = window.location.hash || '#dashboard';
+    const view = hash.substring(1).split('?')[0];
+
+    // Allow login page without auth check
+    if (view === 'login') {
+        handleRoute();
+        return;
+    }
+
+    // For protected routes, verify authentication first
+    const userResponse = await apiRequest('/api/me');
+
+    if (!userResponse) {
+        // 401 or error - redirect to login
+        window.location.hash = '#login';
+        return;
+    }
+
+    // User is authenticated, render the requested view
+    state.user = userResponse.data;
     handleRoute();
+}
+
+function init() {
+    window.addEventListener('hashchange', () => {
+        checkAuthAndRoute();
+    });
+    checkAuthAndRoute();
 }
 
 init();
