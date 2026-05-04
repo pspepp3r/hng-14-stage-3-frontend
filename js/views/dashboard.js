@@ -179,7 +179,7 @@ export async function renderDashboard(container, apiRequest, exportCSV) {
             </div>
         </div>
     `;
-    
+
     // Initial load
     await loadDashboardData({}, apiRequest);
 
@@ -196,7 +196,7 @@ export async function renderDashboard(container, apiRequest, exportCSV) {
     if (isAdmin) {
         const createBtn = document.getElementById('create-profile-btn');
         const createForm = document.getElementById('create-profile-form');
-        
+
         if (createBtn) {
             createBtn.addEventListener('click', () => {
                 createForm.reset();
@@ -223,9 +223,9 @@ export async function loadDashboardData(params = {}, apiRequest) {
     // If 'q' is present, use search endpoint, otherwise use profiles endpoint
     const endpoint = params.q ? '/api/profiles/search' : '/api/profiles';
     const qs = new URLSearchParams(params).toString();
-    
+
     const data = await apiRequest(`${endpoint}?${qs}`);
-    
+
     if (data && data.data) {
         // Update Total Count Metric
         const totalCountEl = document.getElementById('total-count');
@@ -268,9 +268,9 @@ export async function loadDashboardData(params = {}, apiRequest) {
             const colspan = isAdmin ? 7 : 6;
             tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-4 text-muted">No profiles match your criteria.</td></tr>`;
         }
-        
+
         renderDashPagination(data, params, apiRequest);
-        
+
         // Attach event listeners to action buttons
         if (isAdmin) {
             setupActionButtonListeners(apiRequest);
@@ -297,11 +297,11 @@ function renderDashPagination(data, params, apiRequest) {
         <nav>
             <ul class="pagination pagination-sm mb-0">
                 <li class="page-item ${data.page === 1 ? 'disabled' : ''}">
-                    <button class="page-link" onclick='window.loadDash(${JSON.stringify({...params, page: data.page - 1})})'>Previous</button>
+                    <button class="page-link" onclick='window.loadDash(${JSON.stringify({ ...params, page: data.page - 1 })})'>Previous</button>
                 </li>
                 <li class="page-item active"><span class="page-link">${data.page}</span></li>
                 <li class="page-item ${data.page >= data.total_pages ? 'disabled' : ''}">
-                    <button class="page-link" onclick='window.loadDash(${JSON.stringify({...params, page: data.page + 1})})'>Next</button>
+                    <button class="page-link" onclick='window.loadDash(${JSON.stringify({ ...params, page: data.page + 1 })})'>Next</button>
                 </li>
             </ul>
         </nav>
@@ -311,7 +311,7 @@ function renderDashPagination(data, params, apiRequest) {
 // --- Create Profile Handler ---
 async function handleCreateProfileSubmit(e, apiRequest) {
     e.preventDefault();
-    
+
     const form = document.getElementById('create-profile-form');
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
@@ -330,7 +330,7 @@ async function handleCreateProfileSubmit(e, apiRequest) {
     });
 
     const modal = bootstrap.Modal.getInstance(document.getElementById('createProfileModal'));
-    
+
     if (response && response.status === 'success') {
         showToast(`Profile "${data.name}" created successfully`, 'success');
         form.reset();
@@ -354,7 +354,7 @@ function showToast(message, type = 'info') {
         warning: 'bg-warning',
         info: 'bg-info'
     }[type] || 'bg-info';
-    
+
     const iconClass = {
         success: 'bi-check-circle',
         error: 'bi-exclamation-circle',
@@ -391,7 +391,7 @@ function showToast(message, type = 'info') {
 function setupActionButtonListeners(apiRequest) {
     // Edit button listeners
     document.querySelectorAll('.edit-profile-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const profileId = this.getAttribute('data-profile-id');
             const profileName = this.getAttribute('data-profile-name');
             openEditModal(profileId, profileName, apiRequest);
@@ -400,7 +400,7 @@ function setupActionButtonListeners(apiRequest) {
 
     // Delete button listeners
     document.querySelectorAll('.delete-profile-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const profileId = this.getAttribute('data-profile-id');
             const profileName = this.getAttribute('data-profile-name');
             confirmDeleteProfile(profileId, profileName, apiRequest);
@@ -412,14 +412,14 @@ function setupActionButtonListeners(apiRequest) {
 async function openEditModal(profileId, profileName, apiRequest) {
     // Fetch profile data
     const profileData = await apiRequest(`/api/profiles/${profileId}`);
-    
+
     if (!profileData || !profileData.data || profileData.data.length === 0) {
         showToast('Failed to load profile data', 'error');
         return;
     }
 
     const profile = profileData.data[0];
-    
+
     // Populate modal form
     document.getElementById('edit-profile-id').value = profile.id;
     document.getElementById('edit-name').value = profile.name;
@@ -438,7 +438,7 @@ async function openEditModal(profileId, profileName, apiRequest) {
 
 async function handleEditProfileSubmit(e, apiRequest, modal) {
     e.preventDefault();
-    
+
     // Note: Backend doesn't have update endpoint yet
     // This is prepared for when it's available (PATCH /api/profiles/:id)
     showToast('Profile update functionality coming soon', 'info');
@@ -452,7 +452,7 @@ async function confirmDeleteProfile(profileId, profileName, apiRequest) {
     }
 
     const response = await apiRequest(`/api/profiles/${profileId}`, { method: 'DELETE' });
-    
+
     if (response && response.status === 'success') {
         showToast(`Profile "${profileName}" deleted successfully`, 'success');
         // Reload table data

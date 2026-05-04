@@ -3,8 +3,8 @@ import { renderDashboard, loadDashboardData } from './views/dashboard.js';
 import { renderAccount } from './views/account.js';
 import { renderLayout } from './views/layout.js';
 
-// const API_BASE = 'https://hng-14-stage-3-backend-production.up.railway.app';
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://hng-14-stage-3-backend-production.up.railway.app';
+// const API_BASE = 'http://localhost:8000';
 const APP_ELEMENT = document.getElementById('app');
 
 const state = {
