@@ -3,8 +3,9 @@ import { renderDashboard, loadDashboardData } from './views/dashboard.js';
 import { renderAccount } from './views/account.js';
 import { renderLayout } from './views/layout.js';
 
-const API_BASE = 'https://hng-14-stage-3-backend-production.up.railway.app';
+// const API_BASE = 'https://hng-14-stage-3-backend-production.up.railway.app';
 // const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://backend.test';
 const APP_ELEMENT = document.getElementById('app');
 
 const state = {
@@ -17,11 +18,18 @@ const state = {
 
 // --- API Helpers ---
 async function apiRequest(endpoint, options = {}, isRetry = false) {
+    const accessToken = localStorage.getItem('access_token');
+    
     options.headers = {
         'Accept': 'application/json',
         'X-API-Version': '1',
         ...options.headers
     };
+
+    if (accessToken) {
+        options.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
     options.credentials = 'include';
 
     try {
@@ -34,12 +42,12 @@ async function apiRequest(endpoint, options = {}, isRetry = false) {
                 return await apiRequest(endpoint, options, true); // Retry once
             }
             // If refresh fails, redirect to login
-            window.location.hash = '#login';
+            logout();
             return null;
         }
 
         if (response.status === 401 && (isRetry || endpoint === '/auth/refresh')) {
-            window.location.hash = '#login';
+            logout();
             return null;
         }
 
@@ -51,22 +59,37 @@ async function apiRequest(endpoint, options = {}, isRetry = false) {
 }
 
 async function refreshTokens() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+
     try {
         const response = await fetch(`${API_BASE}/auth/refresh`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
+                'Content-Type': 'application/json',
                 'X-API-Version': '1'
             },
+            body: JSON.stringify({ refresh_token: refreshToken }),
             credentials: 'include'
         });
-        return response.ok;
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.status === 'success') {
+                localStorage.setItem('access_token', result.data.access_token);
+                localStorage.setItem('refresh_token', result.data.refresh_token);
+                return true;
+            }
+        }
+        return false;
     } catch (err) {
         return false;
     }
 }
 
 async function exportCSV() {
+    const accessToken = localStorage.getItem('access_token');
     const form = document.getElementById('dash-filter-form');
     const formData = new FormData(form);
     const params = Object.fromEntries(formData.entries());
@@ -80,13 +103,14 @@ async function exportCSV() {
             method: 'GET',
             headers: {
                 'X-API-Version': '1',
-                'Accept': 'text/csv'
+                'Accept': 'text/csv',
+                'Authorization': accessToken ? `Bearer ${accessToken}` : ''
             },
             credentials: 'include'
         });
 
         if (response.status === 401) {
-            window.location.hash = '#login';
+            logout();
             return;
         }
 
@@ -109,6 +133,8 @@ async function exportCSV() {
 
 function logout() {
     apiRequest('/auth/logout', { method: 'POST' });
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     window.location.hash = '#login';
 }
 
@@ -123,6 +149,11 @@ async function handleRoute() {
         return;
     }
 
+    if (view === 'callback') {
+        handleCallback();
+        return;
+    }
+
     renderLayout(
         APP_ELEMENT,
         view,
@@ -132,14 +163,31 @@ async function handleRoute() {
     );
 }
 
+function handleCallback() {
+    const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+    const tokenHash = urlParams.get('tokens');
+
+    if (tokenHash) {
+        try {
+            const tokens = JSON.parse(atob(decodeURIComponent(tokenHash)));
+            localStorage.setItem('access_token', tokens.access_token);
+            localStorage.setItem('refresh_token', tokens.refresh_token);
+        } catch (e) {
+            console.error('Failed to parse tokens', e);
+        }
+    }
+
+    window.location.hash = '#dashboard';
+}
+
 // --- Initialization ---
 
 async function checkAuthAndRoute() {
     const hash = window.location.hash || '#dashboard';
     const view = hash.substring(1).split('?')[0];
 
-    // Allow login page without auth check
-    if (view === 'login') {
+    // Allow login and callback pages without auth check
+    if (view === 'login' || view === 'callback') {
         handleRoute();
         return;
     }
@@ -148,8 +196,7 @@ async function checkAuthAndRoute() {
     const userResponse = await apiRequest('/api/me');
 
     if (!userResponse) {
-        // 401 or error - redirect to login
-        window.location.hash = '#login';
+        // 401 or error - logout handles redirection
         return;
     }
 

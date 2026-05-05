@@ -453,7 +453,7 @@ async function confirmDeleteProfile(profileId, profileName, apiRequest) {
 
     const response = await apiRequest(`/api/profiles/${profileId}`, { method: 'DELETE' });
 
-    if (response && response.status === 'success') {
+    if (response && response.code === 204) {
         showToast(`Profile "${profileName}" deleted successfully`, 'success');
         // Reload table data
         setTimeout(() => {
